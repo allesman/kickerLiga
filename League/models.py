@@ -3,6 +3,8 @@ from typing import Iterable, Optional
 from django.db import models
 from django.utils import timezone
 
+from League.lib import EloTools
+
 
 
 class Player(models.Model):
@@ -13,10 +15,13 @@ class Player(models.Model):
     preffered_position = models.IntegerField(default=0)
 
     def save(self,*args,**kwargs):
-        # create elo entry if not exists
+        # create elo entry if none exists
+        super(Player,self).save(*args,**kwargs)
         if not Elo.objects.filter(player=self).exists():
             Elo.objects.create(player=self)
-        super(Player,self).save(*args,**kwargs)
+            print("created elo entry")
+        else:
+            print("elo entry already exists")
 
 class Elo(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
@@ -31,7 +36,6 @@ class Game(models.Model):
     goal_diff = models.IntegerField(null=True,blank=True) # Difference of goals between team 1 and team 2, if null, game is not played yet
     timestamp = models.DateTimeField(auto_now=True)
     deadline = models.DateTimeField(default=timezone.now()+timezone.timedelta(days=14))
-
     def save(self,*args,**kwargs):
         print("saving game")
         # set new timestamp
@@ -39,6 +43,16 @@ class Game(models.Model):
         # check if game is played (goal_diff is not null)
         if self.goal_diff is not None:
             # calculate new elo
-            # get old elo
-            elo_1A = Elo.objects.filter(player=self.player_1A).order_by('-timestamp').first()
+            # get old elos
+            elos = [Elo.objects.filter(player=player).order_by('-timestamp').first() for player in [self.player_1A,self.player_1B,self.player_2A,self.player_2B]]
+            print(elos)
+            # get int values
+            elos = [elo.value for elo in elos]
+            # calculate new elos
+            new_elos = EloTools.calculate_elos(elos,self.goal_diff)
+            print(new_elos)
+            # save new elos
+            for i,player in enumerate([self.player_1A,self.player_1B,self.player_2A,self.player_2B]):
+                Elo.objects.create(player=player,value=new_elos[i])
+        
         super(Game,self).save(*args,**kwargs)

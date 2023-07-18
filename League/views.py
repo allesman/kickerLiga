@@ -1,3 +1,6 @@
 from django.shortcuts import render
+from League.lib import KickerLeague
+from django.http import HttpResponse
 
-# Create your views here.
+def scoreboard(request):
+    return render(request,"League/scoreboard.html",{})
