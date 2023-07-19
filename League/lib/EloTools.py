@@ -1,7 +1,7 @@
 # the K factor is the maximum change of elo per game, as in the original elo system
 K=32
 # bonus elo for winning/losing
-bonus=5
+bonus=12
 def actual_score(diff):
     # Calculates the score between 0 to 1 from the goal difference
     # diff: goal difference

@@ -13,7 +13,7 @@ def scoreboard(request):
 
 @admin.register(Elo)
 class Scoreboard(admin.ModelAdmin):
-    list_display = ("get_rank","get_name",'value','timestamp')
+    list_display = ("get_rank","get_name",'get_elo','get_kebap_count')
     # list_filter=('player',)
     def get_queryset(self, request):
         global a
@@ -37,6 +37,18 @@ class Scoreboard(admin.ModelAdmin):
         global a
         a+=1
         return a
+    
+    @admin.display(description='elo')
+    def get_elo(self, obj, **kwargs):
+        return obj.value
+
+    @admin.display(description='dönerschulden')
+    def get_kebap_count(self, obj, **kwargs):
+        return obj.player.kebap_count
+    
+    @admin.display(description='spielanzahl')
+    def get_match_count(self, obj, **kwargs):
+        return obj.player.match_count
 
 @admin.register(Player)
 class PlayerAdmin(admin.ModelAdmin):

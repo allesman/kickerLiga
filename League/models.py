@@ -1,22 +1,32 @@
 import datetime
 from typing import Iterable, Optional
 from django.db import models
+from django.dispatch import receiver
 from django.utils import timezone
+# import user model
+from django.contrib.auth.models import User
 
 from League.lib import EloTools
-
-
+from django.db import models
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Player(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     email = models.EmailField(null=True,blank=True)
     is_active = models.BooleanField(default=True)
     match_count = models.IntegerField(default=0)
+    kebap_count = models.IntegerField(default=0)
 
     def save(self,*args,**kwargs):
         print("saving player")
-        # create elo entry if none exists
+        self.first_name = self.user.first_name
+        self.last_name = self.user.last_name
+        self.email = self.user.email
+        # create elo entry if none exists        
         super(Player,self).save(*args,**kwargs)
         if not Elo.objects.filter(player=self).exists():
             Elo.objects.create(player=self)
@@ -25,6 +35,15 @@ class Player(models.Model):
             print("elo entry already exists")
     def __str__(self) -> str:
         return self.first_name + " " + self.last_name
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Player.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.player.save()
 
 class Elo(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
@@ -64,6 +83,18 @@ class Game(models.Model):
             # save new elos
             for i,player in enumerate([self.player_1A,self.player_1B,self.player_2A,self.player_2B]):
                 Elo.objects.create(player=player,value=new_elos[i])
+            # check if the game was to lost with zero goals (a goal difference smaller or equal to -10)
+            if self.goal_diff<=-10:
+                # increase kebap count of players
+                for player in [self.player_1A,self.player_1B]:
+                    player.kebap_count = player.kebap_count + 1
+                    player.save()
+            elif self.goal_diff>=10:
+                # increase kebap count of players
+                for player in [self.player_2A,self.player_2B]:
+                    player.kebap_count = player.kebap_count + 1
+                    player.save()                
+
             # if this is not a manually created game
             if self.matchday is not None: 
                 # check if all games of matchday are played
