@@ -1,11 +1,13 @@
 # the K factor is the maximum change of elo per game, as in the original elo system
 K=32
+# bonus elo for winning/losing
+bonus=5
 def actual_score(diff):
     # Calculates the score between 0 to 1 from the goal difference
     # diff: goal difference
     # return: score between 0 and 1
-    return bool(diff>0)
-    #return 1-1/(1+diff)
+    # return bool(diff>0)
+    return (diff+10)/20
 
 def combined_elo(eloA,eloB):
     # Calculates the combined elo of two players
@@ -26,7 +28,7 @@ def elo_change(eloA,eloB,diff):
     # eloB: elo of player B
     # diff: goal difference
     # return: new elo
-    return K*(actual_score(diff)-expected_score(eloA,eloB))
+    return K*(actual_score(diff)-expected_score(eloA,eloB)) + (bonus if diff>0 else -bonus)
 
 def team_elo_change(eloA1,eloA2,eloB1,eloB2,diff):
     # Calculates the change of elo for the player A1
