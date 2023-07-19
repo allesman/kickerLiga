@@ -26,7 +26,13 @@ class Player(models.Model):
 class Elo(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now=True)
-    value = models.IntegerField(default=1000)
+    value = models.IntegerField(default=1000) 
+    # def __str__(self):
+    #     return self.player.first_name + " " + self.player.last_name + ": " + str(self.value)
+    class Meta:
+        verbose_name = 'Elo'
+        verbose_name_plural = 'Scoreboard'
+    
 
 class Game(models.Model):
     player_1A = models.ForeignKey(Player, on_delete=models.CASCADE,related_name='player_1A')
@@ -37,20 +43,20 @@ class Game(models.Model):
     timestamp = models.DateTimeField(auto_now=True)
     deadline = models.DateTimeField(default=timezone.now()+timezone.timedelta(days=14))
     def save(self,*args,**kwargs):
-        print("saving game")
+        # print("saving game")
         # set new timestamp
-        self.timestamp = timezone.now()
+        # self.timestamp = timezone.now()
         # check if game is played (goal_diff is not null)
         if self.goal_diff is not None:
             # calculate new elo
             # get old elos
             elos = [Elo.objects.filter(player=player).order_by('-timestamp').first() for player in [self.player_1A,self.player_1B,self.player_2A,self.player_2B]]
-            print(elos)
+            # print(elos)
             # get int values
             elos = [elo.value for elo in elos]
             # calculate new elos
             new_elos = EloTools.calculate_elos(elos,self.goal_diff)
-            print(new_elos)
+            # print(new_elos)
             # save new elos
             for i,player in enumerate([self.player_1A,self.player_1B,self.player_2A,self.player_2B]):
                 Elo.objects.create(player=player,value=new_elos[i])
