@@ -12,9 +12,10 @@ class Player(models.Model):
     last_name = models.CharField(max_length=100)
     email = models.EmailField(null=True,blank=True)
     is_active = models.BooleanField(default=True)
-    preffered_position = models.IntegerField(default=0)
+    match_count = models.IntegerField(default=0)
 
     def save(self,*args,**kwargs):
+        print("saving player")
         # create elo entry if none exists
         super(Player,self).save(*args,**kwargs)
         if not Elo.objects.filter(player=self).exists():
@@ -22,6 +23,8 @@ class Player(models.Model):
             print("created elo entry")
         else:
             print("elo entry already exists")
+    def __str__(self) -> str:
+        return self.first_name + " " + self.last_name
 
 class Elo(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
@@ -42,6 +45,7 @@ class Game(models.Model):
     goal_diff = models.IntegerField(null=True,blank=True) # Difference of goals between team 1 and team 2, if null, game is not played yet
     timestamp = models.DateTimeField(auto_now=True)
     deadline = models.DateTimeField(default=timezone.now()+timezone.timedelta(days=14))
+    matchday = models.IntegerField(null=True,blank=True)
     def save(self,*args,**kwargs):
         # print("saving game")
         # set new timestamp
@@ -60,5 +64,16 @@ class Game(models.Model):
             # save new elos
             for i,player in enumerate([self.player_1A,self.player_1B,self.player_2A,self.player_2B]):
                 Elo.objects.create(player=player,value=new_elos[i])
-        
+            # if this is not a manually created game
+            if self.matchday is not None: 
+                # check if all games of matchday are played
+                unplayed=Game.objects.filter(matchday=self.matchday,goal_diff__isnull=True)
+                print(f"unplayed games: {unplayed}")
+        elif self.matchday is not None:
+            # increase match_count of players
+            for player in [self.player_1A,self.player_1B,self.player_2A,self.player_2B]:
+                player.match_count = player.match_count + 1
+                player.save()
+
+
         super(Game,self).save(*args,**kwargs)

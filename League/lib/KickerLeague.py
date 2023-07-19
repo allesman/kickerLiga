@@ -1,49 +1,60 @@
 from random import sample
+from django.utils import timezone
 
 from League.models import Player, Game, Elo
-class KickerLeague:
+# class KickerLeague:
     # example = []
-    def __init__(self):
-        pass
+    # def __init__(self):
+    #     self.create_example_players()
+    #     self.new_match_day()
 
-    def new_match_day(self):
-        # get active players
-        players=Player.objects.filter(is_active=True).order_by("?")
-        #print(players)
-        # shuffle players
-        # sample(players,4)
-        unpairedCount=len(players)%4
-        unpaired = players[:unpairedCount]
-        players = players[unpairedCount:]
-        if unpairedCount>0:
-            print("The following "+str(unpairedCount)+" players are unpaired:"+str(unpaired))
-        # create matches
-        # TODO: Prefered Position is not considered
-        for i in range(0,len(players),4):
-            self.new_match(players[i],players[i+1],players[i+2],players[i+3])
-            # note: this will fail if the number of players is not a multiple of 4
-    def new_match(self,player_1A,player_1B,player_2A,player_2B,diff=None):
-        print(f"Created match with {player_1A.first_name}/{player_1B.first_name} vs {player_2A.first_name}/{player_2B.first_name}")
-        # save match in db
-        return Game.objects.create(player_1A=player_1A,player_1B=player_1B,player_2A=player_2A,player_2B=player_2B,goal_diff=1)
+def new_match_day():
+    # get active players in random order
+    players=Player.objects.filter(is_active=True).order_by('?')
+    # sort players by match count, but keep random order for players with same match count
+    players = sorted(players,key=lambda player: player.match_count, reverse=True)
 
-    def get_scoreboard(self):
-        # get latest elo for each player, together with player name
-        elos = [Elo.objects.filter(player=player).order_by('-timestamp').first() for player in Player.objects.all()]
-        elos = {k:v for k,v in zip([elo.player.first_name for elo in elos], [elo.value for elo in elos])}
-        elos = {k:v for k, v in sorted(elos.items(), key=lambda item: item[1],reverse=True)}
-        print(elos)
-        return elos
+    #print(players)
+    # shuffle players
+    # sample(players,4)
+    unpairedCount=len(players)%4
+    unpaired = players[:unpairedCount]
+    players = players[unpairedCount:]
+    if unpairedCount>0:
+        print("The following "+str(unpairedCount)+" players are unpaired:"+str(unpaired))
+    # get number of matchday, if there are no valid matches yet, start with 1
+    lastmatch = Game.objects.all().order_by("-matchday").first()
+    if lastmatch is None:
+        matchday = 1
+    else:
+        matchday = lastmatch.matchday+1
+    print("Creating match day "+str(matchday))
+    # create matches
+    for i in range(0,len(players),4):
+        new_match(players[i],players[i+1],players[i+2],players[i+3],matchday=matchday)
+def new_match(player_1A,player_1B,player_2A,player_2B,matchday=None):
+    print(f"Created match with {player_1A.first_name}/{player_1B.first_name} vs {player_2A.first_name}/{player_2B.first_name}")
+    # save match in db
+    return Game.objects.create(player_1A=player_1A,player_1B=player_1B,player_2A=player_2A,player_2B=player_2B,matchday=matchday)
 
-    def delete_unplayed():
-        pass
+    # def get_scoreboard(self):
+    #     # get latest elo for each player, together with player name
+    #     # not necessary, because scoreboard is already implemented in the frontend
+    #     elos = [Elo.objects.filter(player=player).order_by('-timestamp').first() for player in Player.objects.all()]
+    #     elos = {k:v for k,v in zip([elo.player.first_name for elo in elos], [elo.value for elo in elos])}
+    #     elos = {k:v for k, v in sorted(elos.items(), key=lambda item: item[1],reverse=True)}
+    #     print(elos)
+    #     return elos
 
-    def create_example_players(self):
-        self.delete_all()
-        for i in range(4):
-            Player.objects.create(first_name="Merlin"+str(i+1),last_name="Mustermann",email="",is_active=True,preffered_position=0),
-    
-    def delete_all(self):
-        Game.objects.all().delete()
-        Player.objects.all().delete()
-        Elo.objects.all().delete()
+def delete_unplayed():
+    Game.objects.filter(goal_diff__isnull=True,deadline__lt=timezone.now()).delete()
+
+def create_example_players(self):
+    self.delete_all()
+    for i in range(4):
+        Player.objects.create(first_name="Merlin"+str(i+1),last_name="Mustermann",email="",is_active=True,preffered_position=0),
+
+def delete_all(self):
+    Game.objects.all().delete()
+    Player.objects.all().delete()
+    Elo.objects.all().delete()

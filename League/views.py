@@ -1,18 +1,15 @@
 from django.shortcuts import render
+from django_object_actions import DjangoObjectActions
 from League.lib import KickerLeague
 from django.http import HttpResponse
 from django.contrib import admin
-from League.models import Elo, Player
+from League.models import Elo, Game, Player
 from django.db import models
 from django.db.models import Max
 a = 0
 
 def scoreboard(request):
     return render(request,"League/scoreboard.html",{})
-
-@admin.register(Player)
-class PlayerAdmin(admin.ModelAdmin):
-    list_display = ('first_name','last_name','email','is_active','preffered_position')
 
 @admin.register(Elo)
 class Scoreboard(admin.ModelAdmin):
@@ -40,3 +37,36 @@ class Scoreboard(admin.ModelAdmin):
         global a
         a+=1
         return a
+
+@admin.register(Player)
+class PlayerAdmin(admin.ModelAdmin):
+    list_display = ('first_name','last_name','email','is_active','match_count')
+
+@admin.register(Game)
+class GameAdmin(DjangoObjectActions,admin.ModelAdmin):
+    # def toolfunc(self, request, obj):
+    #     pass
+
+    @admin.action(description="Create new matchday")
+    def new_match_day(self, request, queryset):
+        KickerLeague.new_match_day()
+
+    @admin.action(description="Delete all unplayed games that have surpassed their deadline")
+    def delete_unplayed(self, request, queryset):
+        KickerLeague.delete_unplayed()
+
+    changelist_actions = ('new_match_day', 'delete_unplayed')
+
+    list_display = ('matchday','get_team_1','get_score','get_team_2','deadline')
+    # list_filter=('player_1A','player_1B','player_2A','player_2B','goal_diff','timestamp')
+    def get_short_name(self, player):
+        return player.first_name+" "+player.last_name[0]+"."
+    @admin.display(description='team 1')
+    def get_team_1(self, obj, **kwargs):
+        return obj.player_1A.first_name+ " & "+obj.player_1B.first_name
+    @admin.display(description='team 2')
+    def get_team_2(self, obj, **kwargs):
+        return obj.player_2A.first_name+ " & "+obj.player_2B.first_name
+    @admin.display(description='score')
+    def get_score(self, obj, **kwargs):
+        return "" if obj.goal_diff==None else "10 - "+str(10-obj.goal_diff) if obj.goal_diff>0 else str(10+obj.goal_diff)+" - 10"
