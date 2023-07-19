@@ -10,18 +10,17 @@ from League.models import Player, Game, Elo
 
 def new_match_day():
     # get active players in random order
-    players=Player.objects.filter(is_active=True).order_by('?')
-    # sort players by match count, but keep random order for players with same match count
+    players=Player.objects.filter(is_active=True)
+    # sort players by match count
     players = sorted(players,key=lambda player: player.match_count, reverse=True)
-
-    #print(players)
-    # shuffle players
-    # sample(players,4)
+    # cut off unpaired players
     unpairedCount=len(players)%4
     unpaired = players[:unpairedCount]
     players = players[unpairedCount:]
     if unpairedCount>0:
         print("The following "+str(unpairedCount)+" players are unpaired:"+str(unpaired))
+    # shuffle players
+    players = sample(players,len(players))
     # get number of matchday, if there are no valid matches yet, start with 1
     lastmatch = Game.objects.all().order_by("-matchday").first()
     if lastmatch is None:
