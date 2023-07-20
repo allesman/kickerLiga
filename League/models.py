@@ -48,9 +48,7 @@ def save_user_profile(sender, instance, **kwargs):
 class Elo(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now=True)
-    value = models.IntegerField(default=1000) 
-    # def __str__(self):
-    #     return self.player.first_name + " " + self.player.last_name + ": " + str(self.value)
+    value = models.IntegerField(default=1000)
     class Meta:
         verbose_name = 'Elo'
         verbose_name_plural = 'Scoreboard'

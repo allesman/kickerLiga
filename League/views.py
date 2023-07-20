@@ -5,8 +5,31 @@ from django.http import HttpResponse
 from django.contrib import admin
 from League.models import Elo, Game, Player
 from django.db import models
-from django.db.models import Max
+from django.db.models import Max    
+from django.contrib import admin
+
 a = 0
+
+def custom_titled_filter(title):
+    class Wrapper(admin.FieldListFilter):
+        def __new__(cls, *args, **kwargs):
+            instance = admin.FieldListFilter.create(*args, **kwargs)
+            instance.title = title
+            return instance
+    return Wrapper
+
+class PlayerFilter(admin.SimpleListFilter):
+    title = "Player"  # a label for our filter
+    parameter_name = "games"  # you can put anything here
+
+    def lookups(self, request, model_admin):
+        # This is where you create filter options; we have two:
+        return [list(x) for x in zip(Player.objects.values_list('id',flat=True),Player.objects.all())]
+
+    def queryset(self, request, queryset):
+        # return all games where the player is either player_1A, player_1B, player_2A or player_2B
+        if self.value():
+            return queryset.filter(models.Q(player_1A=self.value()) | models.Q(player_1B=self.value()) | models.Q(player_2A=self.value()) | models.Q(player_2B=self.value()))
 
 def scoreboard(request):
     return render(request,"League/scoreboard.html",{})
@@ -14,7 +37,7 @@ def scoreboard(request):
 @admin.register(Elo)
 class Scoreboard(admin.ModelAdmin):
     list_display = ("get_rank","get_name",'get_elo','get_kebap_count')
-    # list_filter=('player',)
+    list_filter=(('player__is_active', custom_titled_filter('Activeness')),)
     def get_queryset(self, request):
         global a
         a=0
@@ -53,11 +76,15 @@ class Scoreboard(admin.ModelAdmin):
 @admin.register(Player)
 class PlayerAdmin(admin.ModelAdmin):
     list_display = ('first_name','last_name','email','is_active','match_count')
+    list_filter=(('is_active', custom_titled_filter('Activeness')),)
 
 @admin.register(Game)
 class GameAdmin(DjangoObjectActions,admin.ModelAdmin):
     # def toolfunc(self, request, obj):
     #     pass
+    # list_filter=('player_1A','player_1B','player_2A','player_2B',)
+    # Filter by matchday or by player, where player is one filter looking through all 4 player fields 1A, 1B, 2A, 2B
+    list_filter=(('matchday', custom_titled_filter('Matchday')),PlayerFilter)
 
     @admin.action(description="Create new matchday")
     def new_match_day(self, request, queryset):
@@ -82,3 +109,5 @@ class GameAdmin(DjangoObjectActions,admin.ModelAdmin):
     @admin.display(description='score')
     def get_score(self, obj, **kwargs):
         return "" if obj.goal_diff==None else "10 - "+str(10-obj.goal_diff) if obj.goal_diff>0 else str(10+obj.goal_diff)+" - 10"
+    def any_player(self, obj):
+        return obj.player_1A
