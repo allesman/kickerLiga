@@ -23,7 +23,7 @@ def new_match_day():
     players = sample(players,len(players))
     # get number of matchday, if there are no valid matches yet, start with 1
     lastmatch = Game.objects.all().order_by("-matchday").first()
-    if lastmatch is None:
+    if lastmatch is None or lastmatch.matchday is None:
         matchday = 1
     else:
         matchday = lastmatch.matchday+1
