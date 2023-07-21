@@ -82,27 +82,34 @@ class Game(models.Model):
             for i,player in enumerate([self.player_1A,self.player_1B,self.player_2A,self.player_2B]):
                 Elo.objects.create(player=player,value=new_elos[i])
             # check if the game was to lost with zero goals (a goal difference smaller or equal to -10)
-            if self.goal_diff<=-10:
+            if self.goal_diff<=-9:
                 # increase kebap count of players
                 for player in [self.player_1A,self.player_1B]:
                     player.kebap_count = player.kebap_count + 1
                     player.save()
-            elif self.goal_diff>=10:
+            elif self.goal_diff>=9:
                 # increase kebap count of players
                 for player in [self.player_2A,self.player_2B]:
                     player.kebap_count = player.kebap_count + 1
-                    player.save()                
-
+                    player.save() 
             # if this is not a manually created game
             if self.matchday is not None: 
                 # check if all games of matchday are played
                 unplayed=Game.objects.filter(matchday=self.matchday,goal_diff__isnull=True)
                 print(f"unplayed games: {unplayed}")
-        elif self.matchday is not None:
-            # increase match_count of players
-            for player in [self.player_1A,self.player_1B,self.player_2A,self.player_2B]:
-                player.match_count = player.match_count + 1
-                player.save()
-
+        # elif self.matchday is not None:
+            # # increase match_count of players
+            # for player in [self.player_1A,self.player_1B,self.player_2A,self.player_2B]:
+            #     player.match_count = player.match_count + 1
+            #     player.save()               
+        # for player in [self.player_1A,self.player_1B,self.player_2A,self.player_2B]:
+        #     player.match_count=Game.objects.filter(models.Q(player_1A=player) | models.Q(player_1B=player) | models.Q(player_2A=player) | models.Q(player_2B=player)).count()
+        #     player.save()
 
         super(Game,self).save(*args,**kwargs)
+    # def delete(self,*args,**kwargs):
+    #     # update match_count of players
+    #     for player in [self.player_1A,self.player_1B,self.player_2A,self.player_2B]:
+    #         player.match_count=Game.objects.filter(models.Q(player_1A=player) | models.Q(player_1B=player) | models.Q(player_2A=player) | models.Q(player_2B=player)).count()-1
+    #         player.save()
+    #     super(Game,self).delete(*args,**kwargs)

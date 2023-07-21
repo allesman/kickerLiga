@@ -1,6 +1,6 @@
 from random import sample
 from django.utils import timezone
-
+from django.db import models
 from League.models import Player, Game, Elo
 # class KickerLeague:
     # example = []
@@ -11,6 +11,10 @@ from League.models import Player, Game, Elo
 def new_match_day():
     # get active players in random order
     players=Player.objects.filter(is_active=True)
+    # update match count
+    for player in players:
+            player.match_count=Game.objects.filter(models.Q(player_1A=player) | models.Q(player_1B=player) | models.Q(player_2A=player) | models.Q(player_2B=player)).count()
+            player.save()
     # sort players by match count
     players = sorted(players,key=lambda player: player.match_count, reverse=True)
     # cut off unpaired players

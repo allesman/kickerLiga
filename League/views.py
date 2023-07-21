@@ -74,9 +74,16 @@ class Scoreboard(admin.ModelAdmin):
         return obj.player.match_count
 
 @admin.register(Player)
-class PlayerAdmin(admin.ModelAdmin):
+class PlayerAdmin(DjangoObjectActions,admin.ModelAdmin):
     list_display = ('first_name','last_name','email','is_active','match_count')
     list_filter=(('is_active', custom_titled_filter('Activeness')),)
+    @admin.action(description="Update Match Counts")
+    def update_match_counts(self, request, queryset):
+        # update match_count of players
+        for player in queryset:
+            player.match_count=Game.objects.filter(models.Q(player_1A=player) | models.Q(player_1B=player) | models.Q(player_2A=player) | models.Q(player_2B=player)).count()
+            player.save()
+    changelist_actions = ('update_match_counts',)
 
 @admin.register(Game)
 class GameAdmin(DjangoObjectActions,admin.ModelAdmin):
@@ -108,6 +115,6 @@ class GameAdmin(DjangoObjectActions,admin.ModelAdmin):
         return obj.player_2A.first_name+ " & "+obj.player_2B.first_name
     @admin.display(description='score')
     def get_score(self, obj, **kwargs):
-        return "" if obj.goal_diff==None else "10 - "+str(10-obj.goal_diff) if obj.goal_diff>0 else str(10+obj.goal_diff)+" - 10"
+        return "" if obj.goal_diff==None else "9 - "+str(9-obj.goal_diff) if obj.goal_diff>0 else str(9+obj.goal_diff)+" - 9"
     def any_player(self, obj):
         return obj.player_1A
