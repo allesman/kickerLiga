@@ -1,9 +1,14 @@
-<html>
-  <head>
-    <title>DJE-Kickerliga</title>
-  </head>
-<body>
-    <h1>Scoreboard</h1>
-    Hier kommt das Scoreboard hin
-  </body>
-</html>
+{% extends "League/base.html" %} {% block content %}
+<h1>Scoreboard</h1>
+Hier kommt das Scoreboard hin {{ request.user }}
+
+<p>{{ text }}</p>
+<ul>
+  {% for entry in scoreboard %}
+  <li>
+    <p>{{ entry.player__first_name }} : {{ entry.value }}</p>
+  </li>
+  {% endfor %}
+</ul>
+
+{% endblock content %}

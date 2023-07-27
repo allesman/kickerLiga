@@ -22,7 +22,8 @@ from django.urls import path
 from League import views
 
 urlpatterns = [
-    path('', admin.site.urls),
+    path("", views.scoreboard, name="members"),
+    path("admin/", admin.site.urls),
     # path("",views.scoreboard,name="members"),
-    re_path(r'^favicon\.ico$',RedirectView.as_view(url='/static/images/favicon.ico')),
+    re_path(r"^favicon\.ico$", RedirectView.as_view(url="/static/images/favicon.ico")),
 ]
